@@ -9,12 +9,11 @@
 		var fileReader = new FileReader();
 		var Socket = new WebSocket(url);
 		fileReader.onload = function(readerEvt) {
-			binaryString = btoa(readerEvt.target.result);
+			binaryString = readerEvt.target.result;
 		}
-		fileReader.readAsBinaryString(file);
+		fileReader.readAsDataURL(file);
 		Socket.onopen = function(){
 		Socket.send(JSON.stringify({"cmd" : "UPLOAD_IMAGE", "image" : binaryString}));
-		Socket.close();
 		}
 	}
 	
