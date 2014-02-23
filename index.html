@@ -1,22 +1,252 @@
 <!DOCTYPE html>
-<html lang="en">
-	<head>
-		<style type="text/css">
-			html, body {
-				height: 100vh;
-				margin: 0vh;
-			}
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title> - jsFiddle demo</title>
+  
+  <script type='text/javascript' src='//code.jquery.com/jquery-2.0.2.js'></script>
+  
+  
+  
+  <link rel="stylesheet" type="text/css" href="/css/result-light.css">
+  
+  <style type='text/css'>
+    #yourimage {
+    width:100%;
+}
+.hiddenfile {
+     width: 0px;
+     height: 0px;
+     overflow: hidden;
+}
+.imgWeightHght {
+    height: 290px !important;
+    width: 220px !important;
+}
+.captureInsuPanel img {
+    height: auto;
+    width: auto;
+}
+.newLoaderMask {
+    display: none;
+    background: #E5E5E5;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    opacity: 0.8;
+    z-index: 999;
+}
+  </style>
+  
 
-			#fullPage {
-				max-height: 100vh;
-			}
-		</style>
-	</head>
-	<body>
-		<div id="fullPage">
-			<input type="file" accept="image/*;capture=camera">
-		</div>
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-		<script src="grabFile.js"></script>
-	</body>
+
+<script type='text/javascript'>//<![CDATA[ 
+$(window).load(function(){
+$(document).ready(function () {
+    $("#takePictureField").on("change", gotPic);
+    $('#clickme').on('click',triggerClick);
+});
+function triggerClick(){
+    $('#takePictureField').click();
+}
+var max_width   =   1000;
+var max_height  =   1000;
+
+function gotPic(event) {
+    if (event.target.files.length == 1 && event.target.files[0].type.indexOf("image/") == 0) {
+        var image = event.target.files[0];
+        processCapturedImage(image, 90, max_width, max_height, $("#yourimage"));
+    }
+}
+
+function processCapturedImage(image, angle, max_width, max_height, thumbNailImage) {
+    $('#mask').show();
+
+    //create a hidden canvas object we can use to create new rotated image
+    var canvas = document.createElement('canvas');
+    canvas.id = "hidden_canvas_old";
+    canvas.style.display = "none";
+    document.body.appendChild(canvas);
+
+    //create a hidden canvas object we can use to create the new cropped &/or resized image data
+    var canvas_new = document.createElement('canvas');
+    canvas_new.id = "hidden_canvas_new";
+    canvas_new.style.display = "none";
+    document.body.appendChild(canvas_new);
+
+    var fileLoader = new FileReader(),
+        imageObj = new Image();
+
+    if (image.type.indexOf("image/") == 0) {
+        fileLoader.readAsDataURL(image);
+    } else {
+        alert('File is not an image');
+    }
+    fileLoader.onload = function () {
+        var data = this.result;
+        imageObj.src = data;
+    };
+
+    fileLoader.onabort = function () {
+        alert("The upload was aborted.");
+    };
+
+    fileLoader.onerror = function () {
+        alert("An error occured while reading the file.");
+    };
+
+    // set up the images onload function which clears the hidden canvas context, 
+    // draws the new image then gets the blob data from it
+    imageObj.onload = function () {
+        var imgWidth = this.width;
+        var imgHeight = this.height;
+        if (imgWidth > imgHeight) {
+            //Rotate horizontal image to vertical and resizing is needed
+            rotateAndResize(this, imgWidth, imgHeight, angle, max_width, max_height, thumbNailImage);
+        } else {
+            //no need to rotate only resizing is needed
+            resize(this, imgWidth, imgHeight, max_width, max_height, thumbNailImage);
+        }
+    };
+    imageObj.onabort = function () {
+        alert("Image load was aborted.");
+    };
+
+    imageObj.onerror = function () {
+        alert("An error occured while loading image.");
+    };
+
+}
+
+function rotateAndResize(image, imgWidth, imgHeight, angle, max_width, max_height, thumbNailImage) {
+    var canvas = document.getElementById("hidden_canvas_old"),
+        ctx = canvas.getContext("2d");
+
+    var widthHalf = imgWidth / 2,
+        heightHalf = imgHeight / 2;
+
+    canvas.width = imgWidth;
+    canvas.height = imgWidth;
+    //clear canvas 
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    //set coordinate to rotate canvas 
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    //rotate canvas with given angle
+    ctx.rotate(angle * Math.PI / 180);
+    //draw image on rotated canvas with given coordinate
+    ctx.drawImage(image, -widthHalf, -widthHalf);
+
+    ctx.restore();
+
+    var tempCanvas = document.getElementById("hidden_canvas_new"),
+        tCtx = tempCanvas.getContext("2d");
+
+    tempCanvas.width = imgHeight;
+    tempCanvas.height = imgWidth;
+    /*
+     * Crop rotated image from old canvas to remove white space 
+     * So that canvas will have only image content without extra padding
+     */
+    tCtx.drawImage(canvas, canvas.width - imgHeight, 0, imgHeight, imgWidth, 0, 0, imgHeight, imgWidth);
+    tCtx.restore();
+    //Delete unwanted canvas to reduce page size
+    canvas = null;
+    ctx = null;
+    /**
+     * Resizing Rotated image
+     */
+    // calculate the width and height, constraining the proportions
+    if (imgWidth > imgHeight) {
+        if (imgWidth > max_width) {
+            imgHeight = Math.round(imgHeight *= max_width / imgWidth);
+            imgWidth = max_width;
+        }
+    } else {
+        if (imgWidth > max_height) {
+            imgWidth = Math.round(imgWidth *= max_height / imgHeight);
+            imgHeight = max_height;
+        }
+    }
+    var tempCanvasTemp = tempCanvas;
+    tempCanvas = null;
+    tCtx = null;
+
+    var tempCanvas1 = document.createElement("canvas"),
+        tCtx1 = tempCanvas1.getContext("2d");
+
+    tempCanvas1.id = 'hidden_canvas_new';
+    tempCanvas1.style.display = 'none';
+    tempCanvas1.width = imgHeight;
+    tempCanvas1.height = imgWidth;
+
+    tCtx1.drawImage(tempCanvasTemp, 0, 0, imgHeight, imgWidth);
+    tCtx1.restore();
+
+    document.body.appendChild(tempCanvas1);
+
+    thumbNailImage.attr("src", tempCanvas1.toDataURL('image/jpeg'));
+    $('#mask').hide();
+    tempCanvas1 = null;
+    tCtx1 = null;
+}
+
+function resize(image, imgWidth, imgHeight, max_width, max_height, thumbNailImage) {
+    /**
+     * Resizing image
+     */
+    // calculate the width and height, constraining the proportions
+    if (imgWidth > imgHeight) {
+        if (imgWidth > max_width) {
+            //height *= max_width / width;
+            imgHeight = Math.round(imgHeight *= max_width / imgWidth);
+            imgWidth = max_width;
+        }
+    } else {
+        if (imgWidth > max_height) {
+            //width *= max_height / height;
+            imgWidth = Math.round(imgWidth *= max_height / imgHeight);
+            imgHeight = max_height;
+        }
+    }
+    var tempCanvas = document.getElementById("hidden_canvas_new"),
+        tCtx = tempCanvas.getContext("2d");
+
+    tempCanvas.width = imgWidth;
+    tempCanvas.height = imgHeight;
+
+    tCtx.drawImage(image, 0, 0, imgWidth, imgHeight);
+
+    thumbNailImage.attr("src", tempCanvas.toDataURL('image/jpeg'));
+    tempCanvas = null;
+    tCtx = null;
+    $('#mask').hide();
+}
+});//]]>  
+
+</script>
+
+
+</head>
+<body>
+  <div id="mask" class="newLoaderMask">
+    <img src="http://jimpunk.net/Loading/wp-content/uploads/loading1.gif" width="400" id="loader" />
+</div>
+<img id="clickme" src="http://siliconangle.com/files/2011/02/TapMe-Logo-300x300.png" width="200"/>
+
+<div class="hiddenfile">
+<input type="file" accept="image/*" capture="camera" id="takePictureField" />
+</div>
+
+<div class="captureInsuPanel">
+    <img id="yourimage" class="imgWeightHght" width="500" />
+</div>
+  
+</body>
+
+
 </html>
+
