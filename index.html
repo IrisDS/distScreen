@@ -1,21 +1,36 @@
-<input id="myFileInput" type="file" accept="image/*;capture=camera">
-
-<script>
-	var myInput = document.getElementById('myFileInput');
-	var url = "ws://192.168.101.43:9876/ws/screen/arst"
-	var binaryString
-	function sendPic() {
-    	var file = myInput.files[0];
-		var fileReader = new FileReader();
-		var Socket = new WebSocket(url);
-		fileReader.onload = function(readerEvt) {
-			binaryString = readerEvt.target.result;
-		}
-		fileReader.readAsDataURL(file);
-		Socket.onopen = function(){
-		Socket.send(JSON.stringify({"cmd" : "UPLOAD_IMAGE", "image" : binaryString}));
-		}
+<style>
+	body {
+		height:100%;
+		width:100%;
 	}
+
+	#myFileInput {
+		height: 100%;
+		width: 100%;
+	}
+
+</style>
+
+<body>
+	<input id="myFileInput" type="file" accept="image/*;capture=camera">
+
+	<script>
+		var myInput = document.getElementById('myFileInput');
+		var url = "ws://192.168.101.43:9876/ws/screen/arst"
+		var binaryString
+		function sendPic() {
+			var file = myInput.files[0];
+			var fileReader = new FileReader();
+			var Socket = new WebSocket(url);
+			fileReader.onload = function(readerEvt) {
+				binaryString = readerEvt.target.result;
+			}
+			fileReader.readAsDataURL(file);
+			Socket.onopen = function(){
+			Socket.send(JSON.stringify({"cmd" : "UPLOAD_IMAGE", "image" : binaryString}));
+			}
+		}	
 	
-	myInput.addEventListener('change', sendPic, false);
-</script>
+		myInput.addEventListener('change', sendPic, false);
+	</script>
+</body>
