@@ -4,7 +4,7 @@
 		width:100%;
 	}
 
-	#myFileInput {
+	#myFileInput, .flowplayer, #source_video {
 		height: 100%;
 		width: 100%;
 	}
@@ -12,11 +12,21 @@
 
 <body>
 	<input id="myFileInput" type="file" accept="image/*;capture=camera">
-	<video autoplay="autoplay" id="link"></video>
+	<div class="flowplayer">
+   		<video>
+      		<source id="source_video"  type="video/webm">
+   		</video>
+	</div>	
 
+
+	<link rel="stylesheet" href="//releases.flowplayer.org/5.4.6/skin/minimalist.css">
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+	<script src="//releases.flowplayer.org/5.4.6/flowplayer.min.js"></script>
 	<script>
 		var myInput = document.getElementById('myFileInput');
-		var url = "ws://192.168.101.43:9876/ws/screen/arst"
+		var id = genID();
+		var url = "ws://192.168.0.104:9876/ws/screen/" + id
+		alert(id);
 		var binaryString
 		function sendPic() {
 			var file = myInput.files[0];
@@ -27,22 +37,31 @@
 			}
 			fileReader.readAsDataURL(file);
 			Socket.onopen = function(){
-				Socket.send(JSON.stringify({"cmd" : "UPLOAD_IMAGE", "image" : binaryString}));
+				Socket.send(JSON.stringify({"cmd" : "UPLOAD_IMAGE", "image" :
+							binaryString, "width" : (window.innerWidth > 0) ?
+							window.innerWidth : screen.width}));
+				myInput.style.display = "none";
 			}
 			Socket.onmessage = function(message) {
 				myData = JSON.parse(message)
 				if (myData == {"cmd" : "PLAY", "params" : URL})
 				{
-					var vid = document.getElementById("link")
+					var vid = document.getElementById("source_video");
+					vid.src = URL;
 					//send video to autoplay
 				}
-				else
+				else if (myData == {"cmd" : "PLAY_AT", "params" : val})
 				{
 					//load video
 					//eventlistener to wait for the play cmd
 				}
 			}
 		}	
+		
+		function genID(){
+			return Math.random().toString(36).substr(2)
+				+ Math.random().toString(36).substr(2);
+		}
 	
 		myInput.addEventListener('change', sendPic, false);
 	</script>
