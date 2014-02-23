@@ -8,11 +8,11 @@
 		height: 100%;
 		width: 100%;
 	}
-
 </style>
 
 <body>
 	<input id="myFileInput" type="file" accept="image/*;capture=camera">
+	<video autoplay="autoplay" id="link"></video>
 
 	<script>
 		var myInput = document.getElementById('myFileInput');
@@ -27,7 +27,20 @@
 			}
 			fileReader.readAsDataURL(file);
 			Socket.onopen = function(){
-			Socket.send(JSON.stringify({"cmd" : "UPLOAD_IMAGE", "image" : binaryString}));
+				Socket.send(JSON.stringify({"cmd" : "UPLOAD_IMAGE", "image" : binaryString}));
+			}
+			Socket.onmessage = function(message) {
+				myData = JSON.parse(message)
+				if (myData == {"cmd" : "PLAY", "params" : URL})
+				{
+					var vid = document.getElementById("link")
+					//send video to autoplay
+				}
+				else
+				{
+					//load video
+					//eventlistener to wait for the play cmd
+				}
 			}
 		}	
 	
