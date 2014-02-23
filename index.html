@@ -26,7 +26,6 @@
 		var myInput = document.getElementById('myFileInput');
 		var id = genID();
 		var url = "ws://192.168.0.104:9876/ws/screen/" + id
-		alert(id);
 		var binaryString
 		function sendPic() {
 			var file = myInput.files[0];
@@ -40,8 +39,8 @@
 				Socket.send(JSON.stringify({"cmd" : "UPLOAD_IMAGE", "image" :
 							binaryString, "width" : (window.innerWidth > 0) ?
 							window.innerWidth : screen.width}));
-				myInput.style.display = "none";
 			}
+			$("#myFileInput").remove();
 			Socket.onmessage = function(message) {
 				myData = JSON.parse(message)
 				if (myData == {"cmd" : "PLAY", "params" : URL})
